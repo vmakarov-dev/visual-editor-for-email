@@ -75,6 +75,15 @@
     <section class="panel panel-preview">
       <div class="panel-head">
         <span>Редактор</span>
+        <!-- Тумблер «Скрытые блоки»: показывает всё, что на текущей ширине
+             скрыто (мобильные блоки на десктопе, прехедер и т.п.). В
+             экспортируемый HTML не попадает. -->
+        <button type="button" class="reveal-toggle" id="revealToggle" role="switch" aria-checked="false" disabled
+                title="Показать блоки, скрытые на этой ширине: мобильные на десктопе и наоборот, прехедер. На скачиваемый HTML не влияет">
+          <span class="switch" aria-hidden="true"></span>
+          <span class="reveal-label">Скрытые блоки</span>
+          <b id="revealCount">0</b>
+        </button>
         <div class="seg" id="deviceSwitch">
           <button type="button" data-width="" class="is-on">Desktop</button>
           <button type="button" data-width="375">Mobile</button>

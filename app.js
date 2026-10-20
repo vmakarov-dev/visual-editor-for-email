@@ -7,6 +7,8 @@
   const HIDDEN_PREFIX = 'data-elk-attr-';   // «спрятанные» атрибуты исходника (onclick, type у script…)
   const DISABLED_SCRIPT = 'text/x-elk-disabled';
   const STYLE_ID = 'elk-style';
+  const REVEAL_ATTR = 'data-elk-reveal';          // скрытый блок, показанный тумблером «Скрытые блоки»
+  const REVEAL_STYLE_ATTR = 'data-elk-reveal-style'; // исходный style, если пришлось снять в нём !important
   const HOVER_PAD = 9;  // воздух вокруг элемента у подсветки и «прожектора»
 
   // Схлопываемые HTML-пробелы. Неразрывные и прочие спецпробелы сюда не входят.
@@ -85,6 +87,8 @@
     popCancel: $('#popCancel'),
     popClose: $('#popClose'),
     device: $('#deviceSwitch'),
+    reveal: $('#revealToggle'),
+    revealCount: $('#revealCount'),
     toast: $('#toast'),
   };
 
@@ -97,6 +101,8 @@
     nextId: 0,
     hover: null,        // цель под курсором
     edit: null,         // открытое окно правки
+    reveal: false,      // тумблер «Скрытые блоки» включён
+    preheaderBoundary: null, // первый видимый элемент письма: прехедер стоит раньше него
   };
 
   /*
@@ -121,6 +127,8 @@
     if (!html.trim()) {
       ui.frame.srcdoc = '';
       setEmpty(true);
+      state.reveal = false;
+      updateRevealUi(0);
       renderList();
       return;
     }
@@ -158,6 +166,8 @@
   function restore(doc) {
     const style = doc.getElementById(STYLE_ID);
     if (style) style.remove();
+    // Показанные тумблером блоки: исходный style возвращаем как был.
+    doc.querySelectorAll(`[${REVEAL_STYLE_ATTR}]`).forEach((el) => el.setAttribute('style', el.getAttribute(REVEAL_STYLE_ATTR)));
     doc.querySelectorAll(`script[type="${DISABLED_SCRIPT}"]`).forEach((s) => s.removeAttribute('type'));
     doc.querySelectorAll('*').forEach((el) => {
       for (const attr of Array.from(el.attributes)) {
@@ -177,6 +187,13 @@
     style.id = STYLE_ID;
     style.textContent = `
       html[${HOVER_ATTR}], html[${HOVER_ATTR}] * { cursor: pointer !important; }
+      [${REVEAL_ATTR}~="display"] { display: revert !important; }
+      [${REVEAL_ATTR}~="visibility"] { visibility: visible !important; }
+      [${REVEAL_ATTR}~="opacity"] { opacity: 1 !important; }
+      [${REVEAL_ATTR}~="height"] { max-height: none !important; height: auto !important; overflow: visible !important; }
+      [${REVEAL_ATTR}~="width"] { max-width: none !important; width: auto !important; overflow: visible !important; }
+      [${REVEAL_ATTR}~="font"] { font-size: revert !important; line-height: normal !important; }
+      [${REVEAL_ATTR}] { outline: 1px dashed rgba(116, 133, 212, .9) !important; outline-offset: -1px !important; }
     `;
     (doc.head || doc.documentElement).appendChild(style);
 
@@ -190,8 +207,195 @@
     doc.addEventListener('load', fitFrame, true);
 
     scanLinks();
+    refreshHidden({ setDefault: true });
     fitFrame();
     setTimeout(fitFrame, 300);
+  }
+
+  /* ================= Скрытые блоки ================= */
+
+  // Тумблер в шапке превью показывает всё, что на текущей ширине скрыто:
+  // мобильные блоки на десктопе (и наоборот), прехедер, блоки «только для
+  // Outlook» и т.п. Выключение возвращает обычный адаптивный показ.
+  //
+  // Показ — только служебными метками (атрибут REVEAL_ATTR и правила в
+  // STYLE_ID): при экспорте restore() снимает и то и другое, так что в
+  // скопированный и скачанный HTML показ не попадает.
+
+  const REVEAL_SKIP = new Set(['HEAD', 'SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE', 'BASE', 'NOSCRIPT', 'TEMPLATE', 'BR', 'WBR', 'COL', 'COLGROUP']);
+  // Свойства, которыми прячется блок, — по видам скрытия (см. правила в STYLE_ID).
+  const REVEAL_PROPS = {
+    display: ['display'],
+    visibility: ['visibility'],
+    opacity: ['opacity'],
+    height: ['max-height', 'height', 'overflow', 'overflow-y'],
+    width: ['max-width', 'width', 'overflow', 'overflow-x'],
+    font: ['font-size', 'line-height'],
+  };
+
+  // Чем скрыт элемент на текущей ширине — список видов или пустой.
+  // Схлопнутый блок (max-height: 0 + overflow: hidden — частый приём для
+  // прехедера и мобильных блоков в Gmail) считаем скрытым, только если
+  // внутри правда есть содержимое: пустые распорки с нулевой высотой — не
+  // скрытые блоки.
+  function hiddenKinds(el, cs) {
+    const kinds = [];
+    if (cs.display === 'none') kinds.push('display');
+    if ((cs.visibility === 'hidden' || cs.visibility === 'collapse')
+      && (!el.parentElement || getComputedStyle(el.parentElement).visibility === 'visible')) kinds.push('visibility');
+    if (parseFloat(cs.opacity) === 0) kinds.push('opacity');
+    if (cs.display !== 'none') {
+      const clipY = /hidden|clip/.test(cs.overflowY);
+      const clipX = /hidden|clip/.test(cs.overflowX);
+      if (clipY && el.clientHeight === 0 && el.scrollHeight > 0) kinds.push('height');
+      if (clipX && el.clientWidth === 0 && el.scrollWidth > 0) kinds.push('width');
+    }
+    // Нулевой шрифт — только у блока, который скрыт и так (прехедер:
+    // display: none плюс font-size: 0; line-height: 0). У видимых элементов
+    // font-size: 0 — обычный приём вёрстки (убирает зазоры между
+    // inline-block кнопками), его не трогаем.
+    if ((kinds.length || el.hasAttribute(REVEAL_ATTR)) && parseFloat(cs.fontSize) === 0) kinds.push('font');
+    return kinds;
+  }
+
+  // ── Прехедер ──
+  // Прехедер — скрытый текст в начале письма, который почтовик показывает
+  // в списке писем рядом с темой, — и наполнитель за ним (строка
+  // «пустых» символов, чтобы в превью не подтягивался текст из тела
+  // письма). Они скрыты не «для другой ширины», а всегда и намеренно,
+  // поэтому тумблер их не показывает и не считает.
+  //
+  // Особой метки у прехедера обычно нет — тот же display: none, что и у
+  // мобильного блока. Узнаём по сути:
+  //   • наполнитель — скрытый блок, в котором только невидимые символы
+  //     (&#10240;, &zwnj;, &#847;, &nbsp;, мягкий перенос и т.п.);
+  //   • прехедер — класс или id со словом preheader/preview, либо скрытый
+  //     текстовый блок без картинок, таблиц и ссылок, стоящий вне таблиц
+  //     вёрстки и раньше первого видимого содержимого письма.
+  const INVISIBLE_ONLY = /^[\s\u00a0\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u2800\u3000\u3164\ufeff\uffa0]*$/;
+  const PREHEADER_NAME = /pre-?header|preview/i;
+
+  // Первый видимый элемент с содержимым (текстом или картинкой) — граница,
+  // до которой может стоять прехедер. Считается, пока ничего не показано.
+  function firstVisibleContent(doc) {
+    for (const el of doc.body.querySelectorAll('*')) {
+      if (REVEAL_SKIP.has(el.tagName) || !el.getClientRects().length) continue;
+      if (el.tagName === 'IMG') return el;
+      for (const n of el.childNodes) {
+        if (n.nodeType === 3 && !INVISIBLE_ONLY.test(n.data)) return el;
+      }
+    }
+    return null;
+  }
+
+  function isPreheader(el, boundary) {
+    if (PREHEADER_NAME.test(el.className) || PREHEADER_NAME.test(el.id)) return true;
+    // Картинки, таблицы, ссылки — это уже блок письма (мобильный баннер и
+    // т.п.), а не прехедер, даже если текста в нём нет вовсе.
+    if (el.querySelector('img, table, a, button')) return false;
+    if (INVISIBLE_ONLY.test(el.textContent)) return true;
+    // Прехедер ставят до вёрстки письма, а не внутри её таблиц: скрытый
+    // текст в ячейке — это блок для другой ширины («только на десктопе»),
+    // даже если он стоит раньше всего видимого.
+    if (el.closest('table')) return false;
+    // DOCUMENT_POSITION_FOLLOWING: граница идёт после блока в документе.
+    return !boundary || Boolean(el.compareDocumentPosition(boundary) & Node.DOCUMENT_POSITION_FOLLOWING);
+  }
+
+  // Один проход: находит скрытые блоки, ещё не показанные. Проходов
+  // несколько: показанный блок может прятать внутри себя другие, а сам блок
+  // бывает спрятан двумя способами сразу (прехедер: display: none и
+  // max-height: 0) — второй становится виден, только когда снят первый.
+  // Тогда к уже показанному блоку дописываются новые виды скрытия.
+  function findHidden(doc) {
+    const view = doc.defaultView;
+    const found = [];
+    let skipped = null; // последний пропущенный прехедер — внутрь него не заходим
+    for (const el of doc.body.querySelectorAll('*')) {
+      if (REVEAL_SKIP.has(el.tagName)) continue;
+      if (skipped && skipped.contains(el)) continue;
+      // Внутри уже найденного скрытого блока — не отдельный блок: он
+      // откроется вместе с ним (или на следующем проходе).
+      if (found.length && found[found.length - 1][0].contains(el)) continue;
+      const kinds = hiddenKinds(el, view.getComputedStyle(el));
+      if (!kinds.length) continue;
+      const marked = el.getAttribute(REVEAL_ATTR);
+      if (marked === null) {
+        if (isPreheader(el, state.preheaderBoundary)) {
+          skipped = el;
+          continue;
+        }
+        found.push([el, kinds]);
+        continue;
+      }
+      const had = marked.split(' ');
+      const extra = kinds.filter((k) => !had.includes(k));
+      if (extra.length) found.push([el, had.concat(extra)]);
+    }
+    return found;
+  }
+
+  function markRevealed(el, kinds) {
+    el.setAttribute(REVEAL_ATTR, kinds.join(' '));
+    // display: none !important прямо в style правилом не перебить — снимаем
+    // эти свойства в самом style, а исходный сохраняем (restore() вернёт его
+    // при экспорте, unrevealAll() — при выключении тумблера).
+    const props = kinds.flatMap((k) => REVEAL_PROPS[k]).filter((p) => el.style.getPropertyPriority(p) === 'important');
+    if (!props.length) return;
+    if (!el.hasAttribute(REVEAL_STYLE_ATTR)) el.setAttribute(REVEAL_STYLE_ATTR, el.getAttribute('style') || '');
+    for (const p of props) el.style.removeProperty(p);
+  }
+
+  function revealAll(doc) {
+    for (let pass = 0; pass < 6; pass++) {
+      const found = findHidden(doc);
+      if (!found.length) break;
+      for (const [el, kinds] of found) markRevealed(el, kinds);
+    }
+  }
+
+  function unrevealAll(doc) {
+    doc.querySelectorAll(`[${REVEAL_STYLE_ATTR}]`).forEach((el) => {
+      el.setAttribute('style', el.getAttribute(REVEAL_STYLE_ATTR));
+      el.removeAttribute(REVEAL_STYLE_ATTR);
+    });
+    doc.querySelectorAll(`[${REVEAL_ATTR}]`).forEach((el) => el.removeAttribute(REVEAL_ATTR));
+  }
+
+  // Пересчёт под текущую ширину превью: что скрыто на десктопе, на мобильном
+  // может быть видно, и наоборот. Счётчик — сколько блоков скрыто сейчас
+  // (верхний уровень, без вложенных в уже скрытые).
+  //
+  // setDefault — для только что загруженного письма: тумблер по умолчанию
+  // включён, если скрытые блоки есть, и выключен, если их нет. Дальше —
+  // как выбрал человек: смена ширины его выбор не переписывает.
+  function refreshHidden({ setDefault = false } = {}) {
+    const doc = state.doc;
+    if (!doc || !doc.body) {
+      updateRevealUi(0);
+      return;
+    }
+    unrevealAll(doc);
+    state.preheaderBoundary = firstVisibleContent(doc);
+    const count = findHidden(doc).length;
+    if (setDefault) state.reveal = count > 0;
+    if (state.reveal) revealAll(doc);
+    updateRevealUi(count);
+  }
+
+  function updateRevealUi(count) {
+    ui.revealCount.textContent = String(count);
+    ui.reveal.disabled = count === 0 && !state.reveal;
+    ui.reveal.setAttribute('aria-checked', String(state.reveal));
+    ui.reveal.classList.toggle('is-on', state.reveal);
+  }
+
+  function setReveal(on) {
+    state.reveal = on;
+    closeEditor();
+    hideHover();
+    refreshHidden();
+    fitFrame();
   }
 
   // iframe растягивается по высоте контента, скроллится внешний контейнер.
@@ -1868,8 +2072,12 @@
     ui.device.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b === btn));
     ui.frame.style.width = btn.dataset.width ? btn.dataset.width + 'px' : '';
     hideHover();
-    setTimeout(() => { fitFrame(); positionPopover(); }, 220); // после CSS-перехода ширины
+    // После CSS-перехода ширины: скрытое на одной ширине может быть видно на
+    // другой — пересчитываем и скрытые блоки.
+    setTimeout(() => { refreshHidden(); fitFrame(); positionPopover(); }, 220);
   });
+
+  ui.reveal.addEventListener('click', () => setReveal(!state.reveal));
 
   window.addEventListener('resize', () => { fitFrame(); positionPopover(); hideHover(); paintSource(); });
 
