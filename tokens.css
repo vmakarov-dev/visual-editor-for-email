@@ -1,0 +1,126 @@
+/* ==========================================================
+   Runepost — дизайн-токены (только переменные, без компонентов)
+   Тёмная тема — по умолчанию, светлая — по системной настройке
+   или принудительно через data-theme на <html>.
+   ========================================================== */
+
+:root {
+  /* ---------- Шрифты ---------- */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  /* ---------- Типографическая шкала ---------- */
+  --text-lead:    16px;   --lh-lead:    1.35;
+  --text-body:    16px;   --lh-body:    1.55;
+  --text-button:  15px;
+  --text-small:   14px;   --lh-small:   1.45;
+  --text-caption: 12px;
+
+  /* ---------- Прозрачности ---------- */
+  --o-muted: .6;
+  --o-link:  .62;
+  --o-icon:  .6;
+
+  /* ---------- Радиусы ---------- */
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 14px;
+  --r-pill: 16px;
+
+  /* ---------- Тени ---------- */
+  --shadow-pop: 0 12px 36px rgba(11,15,20,.14);
+
+  /* ---------- Отступы ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 18px;
+  --space-5: 22px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* ---------- Движение ---------- */
+  --ease-soft:  cubic-bezier(.45,.05,.55,.95);
+  --ease-out:   cubic-bezier(.2,.8,.3,1);
+  --ease-move:  cubic-bezier(.37,0,.2,1);
+  --dur-fast: .2s;
+  --dur-base: .28s;
+  --dur-slow: .6s;
+  --blur-field: 12px;
+  --blur-pop:   14px;
+
+  --accent:     #7485D4;
+  --accent-rgb: 116, 133, 212;
+
+  color-scheme: dark light;
+}
+
+/* ---------- Цвета: тёмная тема (по умолчанию) ---------- */
+:root,
+:root[data-theme="dark"] {
+  --bg:           #0B0F14;
+  --surface:      #10151C;
+  --surface-2:    #161C24;
+  --glass:        rgba(11,15,20,.72);
+  --glass-pop:    rgba(16,21,28,.88);
+
+  --ink:          #F4F5F7;
+  --text-2:       #C4CBD4;
+  --muted:        #8A95A3;
+  --placeholder:  #6B7684;
+  --on-ink:       #0B0F14;
+
+  --border:       #27303B;
+  --border-soft:  #1E252E;
+  --border-strong: #3A4553;  /* рамки кнопок: на тёмном стекле обычная --border почти не видна */
+  --seg-on:        #27303B;  /* выбранный пункт сегмента (Desktop/Mobile, тема) */
+
+  --pass:  #5FBF8C;  --pass-tint:  rgba(95,191,140,.14);
+  --warn:  #D9B04A;  --warn-tint:  rgba(217,176,74,.14);
+  --fault: #E8726A;  --fault-tint: rgba(232,114,106,.14);
+  --info:  #8FA3E8;  --info-tint:  rgba(143,163,232,.14);
+
+  --accent-tint:  rgba(116,133,212,.16);
+  --code-link:    #8FB2FF;
+  --shadow-pop:   0 12px 36px rgba(0,0,0,.45);
+}
+
+/* ---------- Цвета: светлая тема ---------- */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F5F7F9;  --surface: #FFFFFF;  --surface-2: #ECEFF3;
+    --glass: rgba(255,255,255,.80);  --glass-pop: rgba(255,255,255,.90);
+    --ink: #0B0F14;  --text-2: #3A444F;  --muted: #56616E;  --placeholder: #8A939E;  --on-ink: #F4F5F7;
+    --border: #D3D8DE;  --border-soft: #DCE2E8;  --border-strong: #D3D8DE;  --seg-on: #FFFFFF;
+    --pass: #2E7D57;  --pass-tint: #E1F1E8;
+    --warn: #8F6B0E;  --warn-tint: #F6EDD3;
+    --fault: #B33A32; --fault-tint: #F8E3E1;
+    --info: #4E6A86;  --info-tint: #E3EAF1;
+    --accent-tint: rgba(116,133,212,.14);
+    --code-link: #2457D6;
+    --shadow-pop: 0 12px 36px rgba(11,15,20,.14);
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #F5F7F9;  --surface: #FFFFFF;  --surface-2: #ECEFF3;
+  --glass: rgba(255,255,255,.80);  --glass-pop: rgba(255,255,255,.90);
+  --ink: #0B0F14;  --text-2: #3A444F;  --muted: #56616E;  --placeholder: #8A939E;  --on-ink: #F4F5F7;
+  --border: #D3D8DE;  --border-soft: #DCE2E8;  --border-strong: #D3D8DE;  --seg-on: #FFFFFF;
+  --pass: #2E7D57;  --pass-tint: #E1F1E8;
+  --warn: #8F6B0E;  --warn-tint: #F6EDD3;
+  --fault: #B33A32; --fault-tint: #F8E3E1;
+  --info: #4E6A86;  --info-tint: #E3EAF1;
+  --accent-tint: rgba(116,133,212,.14);
+  --code-link: #2457D6;
+  --shadow-pop: 0 12px 36px rgba(11,15,20,.14);
+}
+
+/* Принудительная тема из переключателя — и для системных элементов браузера. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }

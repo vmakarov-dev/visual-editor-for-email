@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-10-16T11:40:55.148Z",
+        "reason": "Claude: sample.js is a demo email fixture; Arial is the standard email-safe font for HTML emails, not the app UI font"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-10-16T12:18:45.904Z",
+        "reason": "user requested a glow effect for the hover highlight of editable blocks in the preview"
+      }
+    ]
+  }
+}

@@ -1,0 +1,109 @@
+/* ==========================================================
+   UTM-метки — стили модуля utm.js. Отключается вместе с ним.
+   ========================================================== */
+
+/* Вкладки «Список / UTM-метки» в панели ссылок */
+.links-tabs {
+  display: flex;
+  margin: 0 var(--space-3) var(--space-2);
+  flex-shrink: 0;
+}
+.links-tabs button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.utm-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-sm);
+  background: var(--accent-tint);
+  color: var(--ink);
+  font: var(--weight-medium) 10px/1.5 var(--font-mono);
+}
+
+/* Во вкладке меток панель шире: значения длинные */
+.panel.panel-links.is-wide { width: min(460px, 92vw); }
+
+.utm-pane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-1) var(--space-3) var(--space-4);
+}
+.utm-pane[hidden] { display: none; }
+.utm-empty { margin: var(--space-3) var(--space-1); color: var(--muted); font-size: 13px; }
+
+.utm-section + .utm-section { margin-top: var(--space-4); }
+.utm-title {
+  margin: var(--space-2) var(--space-1) var(--space-2);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.utm-title span { margin-left: 6px; font-weight: var(--weight-regular); letter-spacing: 0; text-transform: none; }
+
+.utm-param {
+  padding: var(--space-2) var(--space-1) var(--space-3);
+  border-top: 1px solid var(--border-soft);
+}
+.utm-name {
+  margin-bottom: 6px;
+  font: var(--weight-medium) 12px/1.4 var(--font-mono);
+  color: var(--ink);
+}
+
+.utm-share { margin-left: 4px; font: 11px var(--font-sans); color: var(--muted); }
+
+.utm-group + .utm-group,
+.utm-missing { margin-top: var(--space-2); }
+
+/* Поле значения — как поле ссылки в окне правки: целиком, с переносом */
+.utm-value {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  padding: 7px var(--space-2);
+  overflow: hidden;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: 12px/16px var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  outline: none;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.utm-value:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+
+/* Где стоит значение: плашки элементов, клик — открыть элемент */
+.utm-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.utm-chip {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), color var(--dur-fast);
+}
+.utm-chip:hover { border-color: rgba(var(--accent-rgb), .5); color: var(--ink); }
+.utm-chip-n { margin-right: 5px; color: var(--muted); font-family: var(--font-mono); }
+
+.utm-missing { display: flex; align-items: baseline; gap: var(--space-2); }
+.utm-missing > span { flex-shrink: 0; font-size: 11px; color: var(--warn); }
+.utm-missing .utm-chips { margin-top: 0; }
